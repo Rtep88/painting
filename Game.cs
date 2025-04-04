@@ -80,6 +80,7 @@ public class Game1 : Game
     protected override void Update(GameTime gameTime)
     {
         Point currentMousePosition = Mouse.GetState().Position - new Point(1);
+        Tool selectedTool = menuComponent.selectedTool;
 
         if (IsKeyPressed(Keys.C))
             canvas.Clear();
@@ -137,7 +138,7 @@ public class Game1 : Game
 
             if (drawingPolygon)
             {
-                if (polygonPoints.Count > 1)
+                if (polygonPoints.Count > 0)
                 {
                     Point distance = polygonPoints[0] - currentMousePosition;
                     if (Math.Sqrt(distance.X * distance.X + distance.Y * distance.Y) < 10)
@@ -146,7 +147,12 @@ public class Game1 : Game
                         renderIt = true;
                     }
                     else
-                        polygonPoints.Add(currentMousePosition);
+                    {
+                        if (selectedTool.shiftPressed)
+                            polygonPoints.Add(Helper.SnapEndTo45Degrees(polygonPoints.Last(), currentMousePosition));
+                        else
+                            polygonPoints.Add(currentMousePosition);
+                    }
                 }
                 else
                     polygonPoints.Add(currentMousePosition);
@@ -160,14 +166,13 @@ public class Game1 : Game
             fpsValues.Enqueue((int)(1 / gameTime.ElapsedGameTime.TotalSeconds));
         }
 
-        if (isDrawing || renderIt || drawingPolygon)
+        if (isDrawing || drawingPolygon || renderIt)
         {
             previewCanvas.Clear();
 
-            Tool selectedTool = menuComponent.selectedTool;
             Canvas canvasToUse;
-            Point size;
-            switch (menuComponent.selectedTool.toolType)
+            Point size, point2;
+            switch (selectedTool.toolType)
             {
                 case ToolType.Circle:
                     canvasToUse = renderIt ? canvas : previewCanvas;
@@ -179,14 +184,17 @@ public class Game1 : Game
                     break;
                 case ToolType.Line:
                     canvasToUse = renderIt ? canvas : previewCanvas;
-                    canvasToUse.rasterizer.Rasterize(new Line(point1, lastMousePositon, 2, selectedTool.firstColor));
+                    point2 = currentMousePosition;
+                    if (selectedTool.shiftPressed)
+                        point2 = Helper.SnapEndTo45Degrees(point1, point2);
+                    canvasToUse.rasterizer.Rasterize(new Line(point1, point2, 5, selectedTool.firstColor, LineType.Dashed));
                     break;
                 case ToolType.Brush:
-                    canvas.rasterizer.Rasterize(new Line(currentMousePosition, lastMousePositon, 2, selectedTool.firstColor));
+                    canvas.rasterizer.Rasterize(new Line(currentMousePosition, lastMousePositon, 2, selectedTool.firstColor, LineType.Normal));
                     break;
                 case ToolType.Rectangle:
                     canvasToUse = renderIt ? canvas : previewCanvas;
-                    Point point2 = currentMousePosition;
+                    point2 = currentMousePosition;
                     size = point2 - point1;
                     if (selectedTool.shiftPressed)
                     {
@@ -200,8 +208,27 @@ public class Game1 : Game
                 case ToolType.Polygon:
                     canvasToUse = renderIt ? canvas : previewCanvas;
                     for (int i = 0; i < polygonPoints.Count; i++)
-                        canvasToUse.rasterizer.Rasterize(new Line(polygonPoints[i],
-                            i == polygonPoints.Count - 1 ? (renderIt ? polygonPoints[0] : currentMousePosition) : polygonPoints[i + 1], 2, selectedTool.firstColor));
+                    {
+                        Point start = polygonPoints[i];
+                        Point end;
+
+                        if (i == polygonPoints.Count - 1)
+                        {
+                            if (!renderIt)
+                            {
+                                if (selectedTool.shiftPressed)
+                                    end = Helper.SnapEndTo45Degrees(start, currentMousePosition);
+                                else
+                                    end = currentMousePosition;
+                            }
+                            else
+                                end = polygonPoints[0];
+                        }
+                        else
+                            end = polygonPoints[i + 1];
+
+                        canvasToUse.rasterizer.Rasterize(new Line(start, end, 2, selectedTool.firstColor, LineType.Normal));
+                    }
                     break;
                 case ToolType.Fill:
                     if (renderIt)
