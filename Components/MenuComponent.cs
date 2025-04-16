@@ -19,6 +19,8 @@ public class MenuComponent : DrawableGameComponent
     public const int MIN_THICKNESS = 1;
     public const int MAX_THICKNESS = 100;
 
+    private Texture2D[] toolTextures = new Texture2D[10];
+
     static readonly Rectangle colorSelector = new Rectangle(GAP, GAP, 180, 180);
     static readonly Rectangle firstColorSelect = new Rectangle(GAP, colorSelector.Bottom + GAP, 25, 25);
     static readonly Rectangle secondColorSelect = new Rectangle(firstColorSelect.Right + GAP, colorSelector.Bottom + GAP, 25, 25);
@@ -26,6 +28,8 @@ public class MenuComponent : DrawableGameComponent
     static readonly Rectangle saturationSelector = new Rectangle(GAP, secondColorSelect.Bottom + GAP, 180, 25);
     static readonly Rectangle opacitySelector = new Rectangle(GAP, saturationSelector.Bottom + GAP, 180, 25);
     static readonly Rectangle thicknessSelector = new Rectangle(GAP, opacitySelector.Bottom + GAP, 180, 25);
+
+    static readonly Rectangle firstToolSelect = new Rectangle(GAP, thicknessSelector.Bottom + GAP, 25, 25);
 
     bool holdingColorSelect = false;
     bool holdingSaturationSelect = false;
@@ -63,6 +67,8 @@ public class MenuComponent : DrawableGameComponent
 
     protected override void LoadContent()
     {
+        for (int i = 0; i < toolTextures.Length; i++)
+            toolTextures[i] = game.Content.Load<Texture2D>("images/tool_" + i);
         spriteBatch = new SpriteBatch(GraphicsDevice);
         base.LoadContent();
     }
@@ -70,19 +76,6 @@ public class MenuComponent : DrawableGameComponent
     public override void Update(GameTime gameTime)
     {
         Point currentMousePosition = Mouse.GetState().Position;
-
-        if (game.IsKeyPressed(Keys.Q))
-            selectedTool.toolType = ToolType.Brush;
-        if (game.IsKeyPressed(Keys.W))
-            selectedTool.toolType = ToolType.Line;
-        if (game.IsKeyPressed(Keys.E))
-            selectedTool.toolType = ToolType.Circle;
-        if (game.IsKeyPressed(Keys.R))
-            selectedTool.toolType = ToolType.Rectangle;
-        if (game.IsKeyPressed(Keys.T))
-            selectedTool.toolType = ToolType.Fill;
-        if (game.IsKeyPressed(Keys.Y))
-            selectedTool.toolType = ToolType.Polygon;
 
         selectedTool.shiftPressed = Keyboard.GetState().IsKeyDown(Keys.LeftShift);
 
@@ -100,6 +93,18 @@ public class MenuComponent : DrawableGameComponent
                 holdingOpacitySelect = true;
             else if (Helper.CheckCollision(thicknessSelector, currentMousePosition))
                 holdingThicknessSelect = true;
+
+            int i = 0;
+            for (int x = 0; x < 2; x++)
+            {
+                for (int y = 0; y < 5; y++)
+                {
+                    if (Helper.CheckCollision(new Rectangle(firstToolSelect.Location + new Point(x, y) * (firstToolSelect.Size + new Point(GAP)),
+                        firstColorSelect.Size), currentMousePosition))
+                        selectedTool.toolType = (ToolType)i;
+                    i++;
+                }
+            }
         }
         if (Mouse.GetState().LeftButton == ButtonState.Pressed)
         {
@@ -169,6 +174,17 @@ public class MenuComponent : DrawableGameComponent
         DrawSlider(saturationSelector, Color.Gray, saturation);
         DrawSlider(opacitySelector, Color.Gray, isSelectedFirstColor ? selectedTool.settedFirstOpacity : selectedTool.settedSecondOpacity);
         DrawSlider(thicknessSelector, Color.Gray, (float)((selectedTool.thickness - (float)MIN_THICKNESS) / (MAX_THICKNESS - MIN_THICKNESS)));
+
+        int i = 0;
+        for (int x = 0; x < 2; x++)
+        {
+            for (int y = 0; y < 5; y++)
+            {
+                DrawWithBorder(toolTextures[i], new Rectangle(firstToolSelect.Location + new Point(x, y) * (firstToolSelect.Size + new Point(GAP)),
+                    firstColorSelect.Size), Color.White, i == (int)selectedTool.toolType ? Color.Red : Color.Gray);
+                i++;
+            }
+        }
 
         selectedTool.Update();
 

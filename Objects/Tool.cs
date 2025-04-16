@@ -3,12 +3,15 @@ using Microsoft.Xna.Framework;
 public enum ToolType
 {
     Brush,
+    Line,
+    DashedLine,
+    DottedLine,
+    Polygon,
     Eraser,
-    Fill,
     Rectangle,
     Circle,
-    Line,
-    Polygon
+    Select,
+    Fill,
 }
 
 public class Tool

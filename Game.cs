@@ -138,12 +138,16 @@ public class Game1 : Game
         {
             isLeftButtonDown = false;
 
-            if (isDrawing && !drawingPolygon)
+            if (isDrawing && !drawingPolygon && selectedTool.toolType != ToolType.Fill)
             {
                 previewCanvas.MergeInto(canvas);
                 previewCanvas.Clear();
                 previewCanvas.RemakeTexture();
-                renderIt = true;
+            }
+
+            if (isDrawing && selectedTool.toolType == ToolType.Fill)
+            {
+                canvas.Fill(currentMousePosition, selectedTool.firstColor);
             }
 
             isDrawing = false;
@@ -156,7 +160,16 @@ public class Game1 : Game
                     if (Math.Sqrt(distance.X * distance.X + distance.Y * distance.Y) < 10)
                     {
                         drawingPolygon = false;
-                        renderIt = true;
+
+                        previewCanvas.Clear();
+                        for (int i = 0; i < polygonPoints.Count - 1; i++)
+                            previewCanvas.rasterizer.Rasterize(new Line(polygonPoints[i], polygonPoints[i + 1], selectedTool.thickness,
+                                selectedTool.firstColor, LineType.Normal));
+                        previewCanvas.rasterizer.Rasterize(new Line(polygonPoints[polygonPoints.Count - 1], polygonPoints[0], selectedTool.thickness,
+                            selectedTool.firstColor, LineType.Normal));
+                        previewCanvas.MergeInto(canvas);
+                        previewCanvas.Clear();
+                        previewCanvas.RemakeTexture();
                     }
                     else
                     {
@@ -191,17 +204,29 @@ public class Game1 : Game
                     int radius = selectedTool.shiftPressed ? Math.Min(Math.Abs(size.X) / 2, Math.Abs(size.Y) / 2) : Math.Max(Math.Abs(size.X) / 2, Math.Abs(size.Y) / 2);
                     Point offset = selectedTool.shiftPressed ? new Point(radius) * new Point(Math.Sign(size.X), Math.Sign(size.Y)) : size / new Point(2);
                     float xyRatio = selectedTool.shiftPressed ? 1 : Math.Abs((float)size.Y / size.X);
-                    previewCanvas.rasterizer.Rasterize(new Circle(point1 + offset, radius, selectedTool.firstColor, selectedTool.secondColor, 
+                    previewCanvas.rasterizer.Rasterize(new Circle(point1 + offset, radius, selectedTool.firstColor, selectedTool.secondColor,
                         selectedTool.thickness, true, xyRatio));
                     break;
                 case ToolType.Line:
                     point2 = currentMousePosition;
                     if (selectedTool.shiftPressed)
                         point2 = Helper.SnapEndTo45Degrees(point1, point2);
+                    previewCanvas.rasterizer.Rasterize(new Line(point1, point2, selectedTool.thickness, selectedTool.firstColor, LineType.Normal));
+                    break;
+                case ToolType.DashedLine:
+                    point2 = currentMousePosition;
+                    if (selectedTool.shiftPressed)
+                        point2 = Helper.SnapEndTo45Degrees(point1, point2);
                     previewCanvas.rasterizer.Rasterize(new Line(point1, point2, selectedTool.thickness, selectedTool.firstColor, LineType.Dashed));
                     break;
+                case ToolType.DottedLine:
+                    point2 = currentMousePosition;
+                    if (selectedTool.shiftPressed)
+                        point2 = Helper.SnapEndTo45Degrees(point1, point2);
+                    previewCanvas.rasterizer.Rasterize(new Line(point1, point2, selectedTool.thickness, selectedTool.firstColor, LineType.Dotted));
+                    break;
                 case ToolType.Brush:
-                    previewCanvas.rasterizer.Rasterize(new Line(currentMousePosition, lastMousePositon, selectedTool.thickness, 
+                    previewCanvas.rasterizer.Rasterize(new Line(currentMousePosition, lastMousePositon, selectedTool.thickness,
                         selectedTool.firstColor, LineType.Normal));
                     break;
                 case ToolType.Rectangle:
@@ -214,7 +239,7 @@ public class Game1 : Game
                         else
                             point2 = point1 + new Point(Math.Abs(size.Y) * Math.Sign(size.X), size.Y);
                     }
-                    previewCanvas.rasterizer.Rasterize(new RectangleShape(point1, point2, selectedTool.firstColor, selectedTool.thickness, 
+                    previewCanvas.rasterizer.Rasterize(new RectangleShape(point1, point2, selectedTool.firstColor, selectedTool.thickness,
                         selectedTool.secondColor, true));
                     break;
                 case ToolType.Polygon:
@@ -225,20 +250,15 @@ public class Game1 : Game
 
                         if (i == polygonPoints.Count - 1)
                         {
-                            if (!renderIt)
-                            {
-                                if (selectedTool.shiftPressed)
-                                    end = Helper.SnapEndTo45Degrees(start, currentMousePosition);
-                                else
-                                    end = currentMousePosition;
-                            }
+                            if (selectedTool.shiftPressed)
+                                end = Helper.SnapEndTo45Degrees(start, currentMousePosition);
                             else
-                                end = polygonPoints[0];
+                                end = currentMousePosition;
                         }
                         else
                             end = polygonPoints[i + 1];
 
-                        previewCanvas.rasterizer.Rasterize(new Line(start, end, selectedTool.thickness, 
+                        previewCanvas.rasterizer.Rasterize(new Line(start, end, selectedTool.thickness,
                             selectedTool.firstColor, LineType.Normal));
                     }
                     break;
