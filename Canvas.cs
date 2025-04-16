@@ -94,4 +94,14 @@ public class Canvas
             }
         }
     }
+
+    public void MergeInto(Canvas canvas)
+    {
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                Color color = Helper.BlendColors(GetPixel(new Point(x, y)), canvas.GetPixel(new Point(x, y)));
+                canvas.SetPixel(new Point(x, y), color);
+            }
+    }
 }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -14,17 +13,23 @@ public class Game1 : Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
-    private const int WIDTH = 1280;
-    private const int HEIGHT = 720;
+    public const int CANVAS_WIDTH = 1280;
+    public const int CANVAS_HEIGHT = 720;
+
+    public const int WIDTH = MenuComponent.MENU_WIDTH + CANVAS_WIDTH;
+    public const int HEIGHT = CANVAS_HEIGHT;
+    public const int CANVAS_OFFSET_X = MenuComponent.MENU_WIDTH;
+    public const int CANVAS_OFFSET_Y = 0;
 
     private const int FPS_INTERVAL = 10;
 
     private Canvas canvas;
     private Canvas previewCanvas;
     private SpriteFont font;
-    private Texture2D pixel;
+    public Texture2D pixel;
 
     private KeyboardState previousKeyboardState;
+    private MouseState previousMouseState;
     private Point lastMousePositon;
 
     private MenuComponent menuComponent;
@@ -32,6 +37,7 @@ public class Game1 : Game
     private bool isLeftButtonDown;
     private bool isDrawing;
     private bool renderIt;
+    public bool mouseClicked;
     private Point point1;
 
     private float savedNotification = 0;
@@ -62,8 +68,8 @@ public class Game1 : Game
         for (int i = 0; i < FPS_INTERVAL; i++)
             fpsValues.Enqueue(60);
 
-        canvas = new Canvas(GraphicsDevice, WIDTH, HEIGHT);
-        previewCanvas = new Canvas(GraphicsDevice, WIDTH, HEIGHT);
+        canvas = new Canvas(GraphicsDevice, CANVAS_WIDTH, CANVAS_HEIGHT);
+        previewCanvas = new Canvas(GraphicsDevice, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         menuComponent = new MenuComponent(this);
 
@@ -79,7 +85,8 @@ public class Game1 : Game
 
     protected override void Update(GameTime gameTime)
     {
-        Point currentMousePosition = Mouse.GetState().Position - new Point(1);
+        Point currentMousePosition = Mouse.GetState().Position - new Point(1) - new Point(CANVAS_OFFSET_X, CANVAS_OFFSET_Y);
+        mouseClicked = Mouse.GetState().LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released;
         Tool selectedTool = menuComponent.selectedTool;
 
         if (IsKeyPressed(Keys.C))
@@ -91,9 +98,9 @@ public class Game1 : Game
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             string filePath = Path.Combine(desktopPath, "painting.png");
 
-            Canvas saveCanvas = new Canvas(GraphicsDevice, WIDTH, HEIGHT);
-            for (int x = 0; x < WIDTH; x++)
-                for (int y = 0; y < HEIGHT; y++)
+            Canvas saveCanvas = new Canvas(GraphicsDevice, CANVAS_WIDTH, CANVAS_HEIGHT);
+            for (int x = 0; x < CANVAS_WIDTH; x++)
+                for (int y = 0; y < CANVAS_HEIGHT; y++)
                 {
                     Color color = canvas.GetPixel(new Point(x, y));
                     saveCanvas.SetPixel(new Point(x, y), color.A == 0 ? Color.White : color);
@@ -102,7 +109,7 @@ public class Game1 : Game
 
             using (FileStream stream = new FileStream(filePath, FileMode.Create))
             {
-                saveCanvas.texture.SaveAsPng(stream, WIDTH, HEIGHT);
+                saveCanvas.texture.SaveAsPng(stream, CANVAS_WIDTH, CANVAS_HEIGHT);
             }
         }
 
@@ -115,7 +122,7 @@ public class Game1 : Game
             previewCanvas.RemakeTexture();
         }
 
-        if (Mouse.GetState().LeftButton == ButtonState.Pressed && !isLeftButtonDown)
+        if (Mouse.GetState().LeftButton == ButtonState.Pressed && !isLeftButtonDown && currentMousePosition.X > 0 && currentMousePosition.Y > 0)
         {
             isLeftButtonDown = true;
             isDrawing = true;
@@ -132,7 +139,12 @@ public class Game1 : Game
             isLeftButtonDown = false;
 
             if (isDrawing && !drawingPolygon)
+            {
+                previewCanvas.MergeInto(canvas);
+                previewCanvas.Clear();
+                previewCanvas.RemakeTexture();
                 renderIt = true;
+            }
 
             isDrawing = false;
 
@@ -166,34 +178,33 @@ public class Game1 : Game
             fpsValues.Enqueue((int)(1 / gameTime.ElapsedGameTime.TotalSeconds));
         }
 
-        if (isDrawing || drawingPolygon || renderIt)
+        if (isDrawing || drawingPolygon)
         {
-            previewCanvas.Clear();
+            if (selectedTool.toolType != ToolType.Brush)
+                previewCanvas.Clear();
 
-            Canvas canvasToUse;
             Point size, point2;
             switch (selectedTool.toolType)
             {
                 case ToolType.Circle:
-                    canvasToUse = renderIt ? canvas : previewCanvas;
                     size = lastMousePositon - point1;
                     int radius = selectedTool.shiftPressed ? Math.Min(Math.Abs(size.X) / 2, Math.Abs(size.Y) / 2) : Math.Max(Math.Abs(size.X) / 2, Math.Abs(size.Y) / 2);
                     Point offset = selectedTool.shiftPressed ? new Point(radius) * new Point(Math.Sign(size.X), Math.Sign(size.Y)) : size / new Point(2);
                     float xyRatio = selectedTool.shiftPressed ? 1 : Math.Abs((float)size.Y / size.X);
-                    canvasToUse.rasterizer.Rasterize(new Circle(point1 + offset, radius, selectedTool.firstColor, Color.Red, 3, true, xyRatio));
+                    previewCanvas.rasterizer.Rasterize(new Circle(point1 + offset, radius, selectedTool.firstColor, selectedTool.secondColor, 
+                        selectedTool.thickness, true, xyRatio));
                     break;
                 case ToolType.Line:
-                    canvasToUse = renderIt ? canvas : previewCanvas;
                     point2 = currentMousePosition;
                     if (selectedTool.shiftPressed)
                         point2 = Helper.SnapEndTo45Degrees(point1, point2);
-                    canvasToUse.rasterizer.Rasterize(new Line(point1, point2, 5, selectedTool.firstColor, LineType.Dashed));
+                    previewCanvas.rasterizer.Rasterize(new Line(point1, point2, selectedTool.thickness, selectedTool.firstColor, LineType.Dashed));
                     break;
                 case ToolType.Brush:
-                    canvas.rasterizer.Rasterize(new Line(currentMousePosition, lastMousePositon, 2, selectedTool.firstColor, LineType.Normal));
+                    previewCanvas.rasterizer.Rasterize(new Line(currentMousePosition, lastMousePositon, selectedTool.thickness, 
+                        selectedTool.firstColor, LineType.Normal));
                     break;
                 case ToolType.Rectangle:
-                    canvasToUse = renderIt ? canvas : previewCanvas;
                     point2 = currentMousePosition;
                     size = point2 - point1;
                     if (selectedTool.shiftPressed)
@@ -203,10 +214,10 @@ public class Game1 : Game
                         else
                             point2 = point1 + new Point(Math.Abs(size.Y) * Math.Sign(size.X), size.Y);
                     }
-                    canvasToUse.rasterizer.Rasterize(new RectangleShape(point1, point2, selectedTool.firstColor));
+                    previewCanvas.rasterizer.Rasterize(new RectangleShape(point1, point2, selectedTool.firstColor, selectedTool.thickness, 
+                        selectedTool.secondColor, true));
                     break;
                 case ToolType.Polygon:
-                    canvasToUse = renderIt ? canvas : previewCanvas;
                     for (int i = 0; i < polygonPoints.Count; i++)
                     {
                         Point start = polygonPoints[i];
@@ -227,7 +238,8 @@ public class Game1 : Game
                         else
                             end = polygonPoints[i + 1];
 
-                        canvasToUse.rasterizer.Rasterize(new Line(start, end, 2, selectedTool.firstColor, LineType.Normal));
+                        previewCanvas.rasterizer.Rasterize(new Line(start, end, selectedTool.thickness, 
+                            selectedTool.firstColor, LineType.Normal));
                     }
                     break;
                 case ToolType.Fill:
@@ -250,17 +262,18 @@ public class Game1 : Game
         previousKeyboardState = Keyboard.GetState();
         lastMousePositon = currentMousePosition;
         isLeftButtonDown = Mouse.GetState().LeftButton == ButtonState.Pressed;
+        previousMouseState = Mouse.GetState();
     }
 
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.White);
 
-        _spriteBatch.Begin();
-        _spriteBatch.Draw(canvas.texture, new Rectangle(0, 0, WIDTH, HEIGHT), Color.White);
-        _spriteBatch.Draw(previewCanvas.texture, new Rectangle(0, 0, WIDTH, HEIGHT), Color.White);
+        _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
+        _spriteBatch.Draw(canvas.texture, new Rectangle(CANVAS_OFFSET_X, CANVAS_OFFSET_Y, CANVAS_WIDTH, CANVAS_HEIGHT), Color.White);
+        _spriteBatch.Draw(previewCanvas.texture, new Rectangle(CANVAS_OFFSET_X, CANVAS_OFFSET_Y, CANVAS_WIDTH, CANVAS_HEIGHT), Color.White);
 
-        _spriteBatch.DrawString(font, "FPS: " + (fpsValues.Sum() / fpsValues.Count).ToString(), new Vector2(0, 0), Color.Black);
+        _spriteBatch.DrawString(font, "FPS: " + (fpsValues.Sum() / fpsValues.Count).ToString(), new Vector2(10 + CANVAS_OFFSET_X, CANVAS_OFFSET_Y), Color.Black);
 
         if (savedNotification > 0)
         {
