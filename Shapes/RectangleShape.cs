@@ -7,10 +7,11 @@ public class RectangleShape
     public Point end;
     public Color color;
     public int borderWidth;
+    public LineType borderType;
     public Color borderColor;
     public bool filled;
 
-    public RectangleShape(Point start, Point end, Color color, int borderWidth, Color borderColor, bool filled)
+    public RectangleShape(Point start, Point end, Color color, int borderWidth, LineType borderType, Color borderColor, bool filled)
     {
         int minX = Math.Min(start.X, end.X);
         int maxX = Math.Max(start.X, end.X);
@@ -21,6 +22,7 @@ public class RectangleShape
         this.end = new Point(maxX, maxY);
         this.color = color;
         this.borderWidth = borderWidth;
+        this.borderType = borderType;
         this.borderColor = borderColor;
         this.filled = filled;
     }

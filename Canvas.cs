@@ -104,4 +104,60 @@ public class Canvas
                 canvas.SetPixel(new Point(x, y), color);
             }
     }
+
+    public void MergeInto(Canvas canvas, Point destinationOffset)
+    {
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                Color color = Helper.BlendColors(GetPixel(new Point(x, y)), canvas.GetPixel(new Point(x, y) + destinationOffset));
+                canvas.SetPixel(new Point(x, y) + destinationOffset, color);
+            }
+    }
+
+    public Canvas CutIntoNewCanvas(Rectangle rectangle)
+    {
+        Canvas newCanvas = new Canvas(texture.GraphicsDevice, rectangle.Width, rectangle.Height);
+        for (int x = 0; x < rectangle.Width; x++)
+            for (int y = 0; y < rectangle.Height; y++)
+            {
+                newCanvas.SetPixel(new Point(x, y), GetPixel(new Point(x + rectangle.X, y + rectangle.Y)));
+                SetPixel(new Point(x + rectangle.X, y + rectangle.Y), Color.Transparent);
+            }
+        return newCanvas;
+    }
+
+    public Canvas ResizeToNewCanvas(Rectangle newRectangle)
+    {
+        int newWidth = newRectangle.Width;
+        int newHeight = newRectangle.Height;
+        Canvas newCanvas = null;
+
+        if (newWidth > 0 && newHeight > 0)
+        {
+            newCanvas = new Canvas(texture.GraphicsDevice, newWidth, newHeight);
+
+            for (int y = 0; y < newHeight; y++)
+            {
+                for (int x = 0; x < newWidth; x++)
+                {
+                    float srcX = (float)x * width / newWidth;
+                    float srcY = (float)y * height / newHeight;
+
+                    int sampleX = (int)Math.Min(width - 1, Math.Round(srcX));
+                    int sampleY = (int)Math.Min(height - 1, Math.Round(srcY));
+
+                    Color color = GetPixel(new Point(sampleX, sampleY));
+                    newCanvas.SetPixel(new Point(x, y), color);
+                }
+            }
+
+            newCanvas.RemakeTexture();
+        }
+        else
+            newCanvas = new Canvas(texture.GraphicsDevice, 1, 1);
+
+        return newCanvas;
+    }
+
 }

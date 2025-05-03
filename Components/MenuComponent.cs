@@ -19,17 +19,22 @@ public class MenuComponent : DrawableGameComponent
     public const int MIN_THICKNESS = 1;
     public const int MAX_THICKNESS = 100;
 
+    public const int FONT_SIZE = 24;
+
     private Texture2D[] toolTextures = new Texture2D[10];
 
     static readonly Rectangle colorSelector = new Rectangle(GAP, GAP, 180, 180);
     static readonly Rectangle firstColorSelect = new Rectangle(GAP, colorSelector.Bottom + GAP, 25, 25);
     static readonly Rectangle secondColorSelect = new Rectangle(firstColorSelect.Right + GAP, colorSelector.Bottom + GAP, 25, 25);
 
-    static readonly Rectangle saturationSelector = new Rectangle(GAP, secondColorSelect.Bottom + GAP, 180, 25);
-    static readonly Rectangle opacitySelector = new Rectangle(GAP, saturationSelector.Bottom + GAP, 180, 25);
-    static readonly Rectangle thicknessSelector = new Rectangle(GAP, opacitySelector.Bottom + GAP, 180, 25);
+    static readonly Rectangle saturationSelectorLabel = new Rectangle(GAP, secondColorSelect.Bottom + GAP, 180, FONT_SIZE);
+    static readonly Rectangle saturationSelector = new Rectangle(GAP, saturationSelectorLabel.Bottom, 180, 25);
+    static readonly Rectangle opacitySelectorLabel = new Rectangle(GAP, saturationSelector.Bottom + GAP, 180, FONT_SIZE);
+    static readonly Rectangle opacitySelector = new Rectangle(GAP, opacitySelectorLabel.Bottom, 180, 25);
+    static readonly Rectangle thicknessSelectorLabel = new Rectangle(GAP, opacitySelector.Bottom + GAP, 180, FONT_SIZE);
+    static readonly Rectangle thicknessSelector = new Rectangle(GAP, thicknessSelectorLabel.Bottom, 180, 25);
 
-    static readonly Rectangle firstToolSelect = new Rectangle(GAP, thicknessSelector.Bottom + GAP, 25, 25);
+    static readonly Rectangle firstToolSelect = new Rectangle(GAP, thicknessSelector.Bottom + GAP, 46, 46);
 
     bool holdingColorSelect = false;
     bool holdingSaturationSelect = false;
@@ -100,8 +105,11 @@ public class MenuComponent : DrawableGameComponent
                 for (int y = 0; y < 5; y++)
                 {
                     if (Helper.CheckCollision(new Rectangle(firstToolSelect.Location + new Point(x, y) * (firstToolSelect.Size + new Point(GAP)),
-                        firstColorSelect.Size), currentMousePosition))
+                        firstToolSelect.Size), currentMousePosition))
+                    {
                         selectedTool.toolType = (ToolType)i;
+                        game.ResetTool();
+                    }
                     i++;
                 }
             }
@@ -156,7 +164,7 @@ public class MenuComponent : DrawableGameComponent
 
     public override void Draw(GameTime gameTime)
     {
-        spriteBatch.Begin();
+        spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointClamp, null, null);
 
         spriteBatch.Draw(game.pixel, new Rectangle(0, 0, MENU_WIDTH, Game1.HEIGHT), Color.LightGray);
 
@@ -171,8 +179,13 @@ public class MenuComponent : DrawableGameComponent
         DrawWithBorder(game.pixel, firstColorSelect, selectedTool.firstColor, isSelectedFirstColor ? Color.Red : Color.Gray);
         DrawWithBorder(game.pixel, secondColorSelect, selectedTool.secondColor, !isSelectedFirstColor ? Color.Red : Color.Gray);
 
+        spriteBatch.DrawString(game.font, "Sytost barvy", saturationSelectorLabel.Location.ToVector2(), Color.Black);
         DrawSlider(saturationSelector, Color.Gray, saturation);
+
+        spriteBatch.DrawString(game.font, "Průhlednost barvy", opacitySelectorLabel.Location.ToVector2(), Color.Black);
         DrawSlider(opacitySelector, Color.Gray, isSelectedFirstColor ? selectedTool.settedFirstOpacity : selectedTool.settedSecondOpacity);
+
+        spriteBatch.DrawString(game.font, "Tloušťka", thicknessSelectorLabel.Location.ToVector2(), Color.Black);
         DrawSlider(thicknessSelector, Color.Gray, (float)((selectedTool.thickness - (float)MIN_THICKNESS) / (MAX_THICKNESS - MIN_THICKNESS)));
 
         int i = 0;
@@ -181,7 +194,7 @@ public class MenuComponent : DrawableGameComponent
             for (int y = 0; y < 5; y++)
             {
                 DrawWithBorder(toolTextures[i], new Rectangle(firstToolSelect.Location + new Point(x, y) * (firstToolSelect.Size + new Point(GAP)),
-                    firstColorSelect.Size), Color.White, i == (int)selectedTool.toolType ? Color.Red : Color.Gray);
+                    firstToolSelect.Size), Color.White, i == (int)selectedTool.toolType ? Color.Red : Color.Gray);
                 i++;
             }
         }

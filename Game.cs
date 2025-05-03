@@ -24,8 +24,8 @@ public class Game1 : Game
     private const int FPS_INTERVAL = 10;
 
     private Canvas canvas;
-    private Canvas previewCanvas;
-    private SpriteFont font;
+    public Canvas previewCanvas;
+    public SpriteFont font;
     public Texture2D pixel;
 
     private KeyboardState previousKeyboardState;
@@ -44,6 +44,28 @@ public class Game1 : Game
 
     private bool drawingPolygon;
     private List<Point> polygonPoints = new List<Point>();
+
+    private enum ResizeDirection
+    {
+        None,
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight,
+        Left,
+        Right,
+        Top,
+        Bottom
+    }
+
+    private Rectangle selectedRectangle = new Rectangle(-1, -1, -1, -1);
+    private Rectangle originalSelectedRectangle = new Rectangle(-1, -1, -1, -1);
+    private Canvas selectedCanvas;
+    private Canvas originalCanvas;
+    private bool selecting = false;
+    private bool moving = false;
+    private bool resizing = false;
+    private ResizeDirection resizeDirection = ResizeDirection.None;
 
     private Queue<int> fpsValues = new Queue<int>();
 
@@ -88,6 +110,7 @@ public class Game1 : Game
         Point currentMousePosition = Mouse.GetState().Position - new Point(1) - new Point(CANVAS_OFFSET_X, CANVAS_OFFSET_Y);
         mouseClicked = Mouse.GetState().LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released;
         Tool selectedTool = menuComponent.selectedTool;
+        Mouse.SetCursor(MouseCursor.Arrow);
 
         if (IsKeyPressed(Keys.C))
             canvas.Clear();
@@ -115,11 +138,61 @@ public class Game1 : Game
 
         if (IsKeyPressed(Keys.Escape) || IsKeyPressed(Keys.C))
         {
-            isDrawing = false;
-            drawingPolygon = false;
-            polygonPoints.Clear();
-            previewCanvas.Clear();
-            previewCanvas.RemakeTexture();
+            ResetTool();
+        }
+
+        if (Keyboard.GetState().IsKeyDown(Keys.Delete))
+        {
+            selectedCanvas = null;
+
+            ResetTool();
+        }
+
+        if (currentMousePosition.X > 0 && currentMousePosition.Y > 0)
+        {
+            if (selectedTool.toolType == ToolType.Select)
+            {
+                Rectangle biggerRectangle = new Rectangle(selectedRectangle.Location - new Point(15), selectedRectangle.Size + new Point(30));
+                if (biggerRectangle.Contains(currentMousePosition) && !selecting)
+                {
+                    if (selectedRectangle.Contains(currentMousePosition) && !resizing)
+                        Mouse.SetCursor(MouseCursor.Hand);
+                    else if (!moving)
+                    {
+                        ResizeDirection resizeDirection = GetResizeDirection(currentMousePosition, selectedRectangle);
+                        if (resizing)
+                            resizeDirection = this.resizeDirection;
+
+                        switch (resizeDirection)
+                        {
+                            case ResizeDirection.TopLeft:
+                                Mouse.SetCursor(MouseCursor.SizeNWSE);
+                                break;
+                            case ResizeDirection.BottomRight:
+                                Mouse.SetCursor(MouseCursor.SizeNWSE);
+                                break;
+                            case ResizeDirection.TopRight:
+                                Mouse.SetCursor(MouseCursor.SizeNESW);
+                                break;
+                            case ResizeDirection.BottomLeft:
+                                Mouse.SetCursor(MouseCursor.SizeNESW);
+                                break;
+                            case ResizeDirection.Top:
+                                Mouse.SetCursor(MouseCursor.SizeNS);
+                                break;
+                            case ResizeDirection.Bottom:
+                                Mouse.SetCursor(MouseCursor.SizeNS);
+                                break;
+                            case ResizeDirection.Left:
+                                Mouse.SetCursor(MouseCursor.SizeWE);
+                                break;
+                            case ResizeDirection.Right:
+                                Mouse.SetCursor(MouseCursor.SizeWE);
+                                break;
+                        }
+                    }
+                }
+            }
         }
 
         if (Mouse.GetState().LeftButton == ButtonState.Pressed && !isLeftButtonDown && currentMousePosition.X > 0 && currentMousePosition.Y > 0)
@@ -133,12 +206,39 @@ public class Game1 : Game
                 drawingPolygon = true;
                 polygonPoints.Clear();
             }
+
+            if (selectedTool.toolType == ToolType.Select)
+            {
+                Rectangle biggerRectangle = new Rectangle(selectedRectangle.Location - new Point(15), selectedRectangle.Size + new Point(30));
+                if (!biggerRectangle.Contains(currentMousePosition))
+                {
+                    selecting = true;
+                    if (selectedCanvas != null)
+                    {
+                        selectedCanvas.MergeInto(canvas, selectedRectangle.Location);
+                        selectedCanvas = null;
+                    }
+                    originalCanvas = null;
+                }
+                else if (selectedRectangle.Contains(currentMousePosition))
+                {
+                    point1 = currentMousePosition;
+                    moving = true;
+                }
+                else
+                {
+                    point1 = currentMousePosition;
+                    resizeDirection = GetResizeDirection(currentMousePosition, selectedRectangle);
+                    resizing = true;
+                    originalSelectedRectangle = selectedRectangle;
+                }
+            }
         }
         else if (Mouse.GetState().LeftButton == ButtonState.Released && isLeftButtonDown)
         {
             isLeftButtonDown = false;
 
-            if (isDrawing && !drawingPolygon && selectedTool.toolType != ToolType.Fill)
+            if (isDrawing && !drawingPolygon && selectedTool.toolType != ToolType.Fill && selectedTool.toolType != ToolType.Select)
             {
                 previewCanvas.MergeInto(canvas);
                 previewCanvas.Clear();
@@ -148,6 +248,33 @@ public class Game1 : Game
             if (isDrawing && selectedTool.toolType == ToolType.Fill)
             {
                 canvas.Fill(currentMousePosition, selectedTool.firstColor);
+            }
+
+            if (isDrawing && selectedTool.toolType == ToolType.Select)
+            {
+                if (selecting)
+                {
+                    selecting = false;
+                    if (selectedRectangle.Size.X > 0 && selectedRectangle.Size.Y > 0)
+                    {
+                        selectedCanvas = canvas.CutIntoNewCanvas(selectedRectangle);
+                        selectedCanvas.RemakeTexture();
+                        originalCanvas = selectedCanvas;
+                    }
+                    else
+                    {
+                        ResetTool();
+                    }
+                }
+                else if (resizing)
+                {
+                    resizing = false;
+                    originalSelectedRectangle = new Rectangle(-1, -1, -1, -1);
+                }
+                else if (moving)
+                {
+                    moving = false;
+                }
             }
 
             isDrawing = false;
@@ -240,7 +367,7 @@ public class Game1 : Game
                             point2 = point1 + new Point(Math.Abs(size.Y) * Math.Sign(size.X), size.Y);
                     }
                     previewCanvas.rasterizer.Rasterize(new RectangleShape(point1, point2, selectedTool.firstColor, selectedTool.thickness,
-                        selectedTool.secondColor, true));
+                        LineType.Normal, selectedTool.secondColor, true));
                     break;
                 case ToolType.Polygon:
                     for (int i = 0; i < polygonPoints.Count; i++)
@@ -265,6 +392,78 @@ public class Game1 : Game
                 case ToolType.Fill:
                     if (renderIt)
                         canvas.Fill(currentMousePosition, selectedTool.firstColor);
+                    break;
+                case ToolType.Eraser:
+                    canvas.rasterizer.Rasterize(new Line(currentMousePosition, lastMousePositon, selectedTool.thickness,
+                            Color.Transparent, LineType.Normal));
+                    break;
+                case ToolType.Select:
+                    point2 = currentMousePosition;
+                    if (selectedCanvas == null)
+                    {
+                        if (selecting)
+                            selectedRectangle = Helper.RemoveNegativeSize(new Rectangle(point1, point2 - point1));
+                    }
+                    else
+                    {
+                        if (resizing)
+                        {
+                            Point resizeSize = point2 - point1;
+                            selectedRectangle = new Rectangle(originalSelectedRectangle.Location, originalSelectedRectangle.Size);
+
+                            switch (resizeDirection)
+                            {
+                                case ResizeDirection.TopLeft:
+                                    selectedRectangle.X += resizeSize.X;
+                                    selectedRectangle.Y += resizeSize.Y;
+                                    selectedRectangle.Width -= resizeSize.X;
+                                    selectedRectangle.Height -= resizeSize.Y;
+                                    break;
+                                case ResizeDirection.TopRight:
+                                    selectedRectangle.Y += resizeSize.Y;
+                                    selectedRectangle.Width += resizeSize.X;
+                                    selectedRectangle.Height -= resizeSize.Y;
+                                    break;
+                                case ResizeDirection.BottomLeft:
+                                    selectedRectangle.X += resizeSize.X;
+                                    selectedRectangle.Width -= resizeSize.X;
+                                    selectedRectangle.Height += resizeSize.Y;
+                                    break;
+                                case ResizeDirection.BottomRight:
+                                    selectedRectangle.Width += resizeSize.X;
+                                    selectedRectangle.Height += resizeSize.Y;
+                                    break;
+                                case ResizeDirection.Left:
+                                    selectedRectangle.X += resizeSize.X;
+                                    selectedRectangle.Width -= resizeSize.X;
+                                    break;
+                                case ResizeDirection.Right:
+                                    selectedRectangle.Width += resizeSize.X;
+                                    break;
+                                case ResizeDirection.Top:
+                                    selectedRectangle.Y += resizeSize.Y;
+                                    selectedRectangle.Height -= resizeSize.Y;
+                                    break;
+                                case ResizeDirection.Bottom:
+                                    selectedRectangle.Height += resizeSize.Y;
+                                    break;
+                            }
+
+                            selectedRectangle = Helper.RemoveNegativeSize(selectedRectangle);
+                            selectedCanvas = originalCanvas.ResizeToNewCanvas(selectedRectangle);
+                        }
+                        else if (moving)
+                        {
+                            selectedRectangle = new Rectangle(selectedRectangle.Location + (point2 - point1), selectedRectangle.Size);
+                            point1 = currentMousePosition;
+                        }
+
+                    }
+
+                    if (selectedRectangle.Size.X > 0 || selectedRectangle.Size.Y > 0)
+                        previewCanvas.rasterizer.Rasterize(new RectangleShape(selectedRectangle.Location - new Point(2),
+                            selectedRectangle.Location + selectedRectangle.Size + new Point(2), selectedTool.firstColor, 2,
+                            LineType.Dashed, Color.Gray, false));
                     break;
             }
 
@@ -293,6 +492,15 @@ public class Game1 : Game
         _spriteBatch.Draw(canvas.texture, new Rectangle(CANVAS_OFFSET_X, CANVAS_OFFSET_Y, CANVAS_WIDTH, CANVAS_HEIGHT), Color.White);
         _spriteBatch.Draw(previewCanvas.texture, new Rectangle(CANVAS_OFFSET_X, CANVAS_OFFSET_Y, CANVAS_WIDTH, CANVAS_HEIGHT), Color.White);
 
+        if (menuComponent.selectedTool.toolType == ToolType.Select)
+        {
+            if (selectedCanvas != null)
+            {
+                _spriteBatch.Draw(selectedCanvas.texture, new Rectangle(new Point(CANVAS_OFFSET_X, CANVAS_OFFSET_Y) +
+                    selectedRectangle.Location, new Point(selectedCanvas.width, selectedCanvas.height)), Color.White);
+            }
+        }
+
         _spriteBatch.DrawString(font, "FPS: " + (fpsValues.Sum() / fpsValues.Count).ToString(), new Vector2(10 + CANVAS_OFFSET_X, CANVAS_OFFSET_Y), Color.Black);
 
         if (savedNotification > 0)
@@ -308,5 +516,42 @@ public class Game1 : Game
     public bool IsKeyPressed(Keys key)
     {
         return Keyboard.GetState().IsKeyDown(key) && !previousKeyboardState.IsKeyDown(key);
+    }
+
+    public void ResetTool()
+    {
+        isDrawing = false;
+        drawingPolygon = false;
+        polygonPoints.Clear();
+        previewCanvas.Clear();
+        previewCanvas.RemakeTexture();
+
+        if (selectedCanvas != null)
+        {
+            selectedCanvas.MergeInto(canvas, selectedRectangle.Location);
+            selectedCanvas = null;
+        }
+        selectedRectangle = new Rectangle(-1, -1, -1, -1);
+    }
+
+    private ResizeDirection GetResizeDirection(Point mouse, Rectangle rect)
+    {
+        const int margin = 20;
+
+        bool left = Math.Abs(mouse.X - rect.Left) <= margin;
+        bool right = Math.Abs(mouse.X - rect.Right) <= margin;
+        bool top = Math.Abs(mouse.Y - rect.Top) <= margin;
+        bool bottom = Math.Abs(mouse.Y - rect.Bottom) <= margin;
+
+        if (left && top) return ResizeDirection.TopLeft;
+        if (right && top) return ResizeDirection.TopRight;
+        if (left && bottom) return ResizeDirection.BottomLeft;
+        if (right && bottom) return ResizeDirection.BottomRight;
+        if (left) return ResizeDirection.Left;
+        if (right) return ResizeDirection.Right;
+        if (top) return ResizeDirection.Top;
+        if (bottom) return ResizeDirection.Bottom;
+
+        return ResizeDirection.None;
     }
 }

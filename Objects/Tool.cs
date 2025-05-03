@@ -20,8 +20,8 @@ public class Tool
     public ToolType toolType;
     public Color settedFirstColor = Color.Black;
     public float settedFirstOpacity = 1f;
-    public Color settedSecondColor = Color.White;
-    public float settedSecondOpacity = 0f;
+    public Color settedSecondColor = Color.Gray;
+    public float settedSecondOpacity = 1f;
 
     public Color firstColor = Color.Black;
     public Color secondColor = Color.White;

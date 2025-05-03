@@ -66,4 +66,19 @@ public static class Helper
     public static bool CheckCollision(Rectangle rectangle, Point point) => rectangle.Contains(point);
 
     public static bool CheckCollision(Rectangle rectangle, Rectangle rectangle2) => rectangle.Intersects(rectangle2);
+
+    public static Rectangle RemoveNegativeSize(Rectangle rectangle)
+    {
+        if (rectangle.Width < 0)
+        {
+            rectangle.X += rectangle.Width;
+            rectangle.Width *= -1;
+        }
+        if (rectangle.Height < 0)
+        {
+            rectangle.Y += rectangle.Height;
+            rectangle.Height *= -1;
+        }
+        return rectangle;
+    }
 }
