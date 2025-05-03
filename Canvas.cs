@@ -52,7 +52,7 @@ public class Canvas
                 if (x * x + y * y <= radius * radius && x * x + y * y >= (radius - width) * (radius - width))
                     SetPixel(new Point(point.X + x, point.Y + y), color);
     }
-
+    
     public void DrawLine(Point start, Point end, int width, Color color)
     {
         int radius = width / 2;
@@ -69,6 +69,7 @@ public class Canvas
         }
     }
 
+    // Pouzije BFS k vyplneni oblasti barvou
     public void Fill(Point point, Color color)
     {
         if (CheckIfPixelIsWithinBorders(point))
@@ -95,6 +96,7 @@ public class Canvas
         }
     }
 
+    // Pripise canvas do tohoto canvasu
     public void MergeInto(Canvas canvas)
     {
         for (int x = 0; x < width; x++)
@@ -105,6 +107,7 @@ public class Canvas
             }
     }
 
+    // Pripise canvas do tohoto canvasu
     public void MergeInto(Canvas canvas, Point destinationOffset)
     {
         for (int x = 0; x < width; x++)
@@ -115,6 +118,7 @@ public class Canvas
             }
     }
 
+    // Vystrihne cast canvasu a vrati ji jako novy canvas
     public Canvas CutIntoNewCanvas(Rectangle rectangle)
     {
         Canvas newCanvas = new Canvas(texture.GraphicsDevice, rectangle.Width, rectangle.Height);
@@ -127,11 +131,12 @@ public class Canvas
         return newCanvas;
     }
 
+    // Zmeni velikost tohoto canvasu do noveho canvasu
     public Canvas ResizeToNewCanvas(Rectangle newRectangle)
     {
         int newWidth = newRectangle.Width;
         int newHeight = newRectangle.Height;
-        Canvas newCanvas = null;
+        Canvas newCanvas;
 
         if (newWidth > 0 && newHeight > 0)
         {

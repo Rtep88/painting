@@ -10,12 +10,13 @@ namespace painting;
 
 public class Game1 : Game
 {
+    // Sprava grafickeho zarizeni a kreslici nastroj
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
+    // Konstanty pro velikost platna a celeho okna
     public const int CANVAS_WIDTH = 1280;
     public const int CANVAS_HEIGHT = 720;
-
     public const int WIDTH = MenuComponent.MENU_WIDTH + CANVAS_WIDTH;
     public const int HEIGHT = CANVAS_HEIGHT;
     public const int CANVAS_OFFSET_X = MenuComponent.MENU_WIDTH;
@@ -23,17 +24,20 @@ public class Game1 : Game
 
     private const int FPS_INTERVAL = 10;
 
+    // Platno a pomocne promenne
     private Canvas canvas;
     public Canvas previewCanvas;
     public SpriteFont font;
     public Texture2D pixel;
 
+    // Stavy klavesnice a mysi
     private KeyboardState previousKeyboardState;
     private MouseState previousMouseState;
     private Point lastMousePositon;
 
     private MenuComponent menuComponent;
 
+    // Priznaky pro kresleni a ovladani
     private bool isLeftButtonDown;
     private bool isDrawing;
     private bool renderIt;
@@ -42,22 +46,14 @@ public class Game1 : Game
 
     private float savedNotification = 0;
 
+    // Priznaky pro kresleni polygonu
     private bool drawingPolygon;
     private List<Point> polygonPoints = new List<Point>();
 
-    private enum ResizeDirection
-    {
-        None,
-        TopLeft,
-        TopRight,
-        BottomLeft,
-        BottomRight,
-        Left,
-        Right,
-        Top,
-        Bottom
-    }
+    // Mozne smery pro zmenu velikosti
+    private enum ResizeDirection { None, TopLeft, TopRight, BottomLeft, BottomRight, Left, Right, Top, Bottom }
 
+    // Promenne pro vyber a manipulaci s objektem
     private Rectangle selectedRectangle = new Rectangle(-1, -1, -1, -1);
     private Rectangle originalSelectedRectangle = new Rectangle(-1, -1, -1, -1);
     private Canvas selectedCanvas;
@@ -67,6 +63,7 @@ public class Game1 : Game
     private bool resizing = false;
     private ResizeDirection resizeDirection = ResizeDirection.None;
 
+    // Fronta pro vypocet FPS
     private Queue<int> fpsValues = new Queue<int>();
 
     public Game1()
@@ -78,21 +75,25 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
+        // Inicializace velikosti okna a platna
         _graphics.PreferredBackBufferWidth = WIDTH;
         _graphics.PreferredBackBufferHeight = HEIGHT;
         IsFixedTimeStep = false;
-
         _graphics.ApplyChanges();
 
+        // Vytvoreni jednobarevne textury
         pixel = new Texture2D(GraphicsDevice, 1, 1);
         pixel.SetData([Color.White]);
 
+        // Inicializace fronty FPS
         for (int i = 0; i < FPS_INTERVAL; i++)
             fpsValues.Enqueue(60);
 
+        // Vytvoreni platna
         canvas = new Canvas(GraphicsDevice, CANVAS_WIDTH, CANVAS_HEIGHT);
         previewCanvas = new Canvas(GraphicsDevice, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+        // Inicializace menu
         menuComponent = new MenuComponent(this);
 
         base.Initialize();
@@ -100,21 +101,24 @@ public class Game1 : Game
 
     protected override void LoadContent()
     {
+        // Nacteni fontu a inicializace spriteBatch
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-
         font = Content.Load<SpriteFont>("fonts/Arial");
     }
 
     protected override void Update(GameTime gameTime)
     {
+        // Zpracovani vstupu od uzivatele
         Point currentMousePosition = Mouse.GetState().Position - new Point(1) - new Point(CANVAS_OFFSET_X, CANVAS_OFFSET_Y);
         mouseClicked = Mouse.GetState().LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released;
         Tool selectedTool = menuComponent.selectedTool;
         Mouse.SetCursor(MouseCursor.Arrow);
 
+        // Vymazani platna
         if (IsKeyPressed(Keys.C))
             canvas.Clear();
 
+        // Ulozeni obrazku
         if (IsKeyPressed(Keys.S))
         {
             savedNotification = 3;
@@ -136,18 +140,18 @@ public class Game1 : Game
             }
         }
 
+        // Reset nastroje
         if (IsKeyPressed(Keys.Escape) || IsKeyPressed(Keys.C))
-        {
             ResetTool();
-        }
 
+        // Smazani vybrane oblasti
         if (Keyboard.GetState().IsKeyDown(Keys.Delete))
         {
             selectedCanvas = null;
-
             ResetTool();
         }
 
+        // Zmena kurzoru podle nastroje
         if (currentMousePosition.X > 0 && currentMousePosition.Y > 0)
         {
             if (selectedTool.toolType == ToolType.Select)
@@ -195,18 +199,21 @@ public class Game1 : Game
             }
         }
 
+        // Zacatek drzeni mysi
         if (Mouse.GetState().LeftButton == ButtonState.Pressed && !isLeftButtonDown && currentMousePosition.X > 0 && currentMousePosition.Y > 0)
         {
             isLeftButtonDown = true;
             isDrawing = true;
             point1 = currentMousePosition;
 
+            // Zacatek vykresleni polygonu
             if (!drawingPolygon && menuComponent.selectedTool.toolType == ToolType.Polygon)
             {
                 drawingPolygon = true;
                 polygonPoints.Clear();
             }
 
+            // Zacatek vyberu oblasti
             if (selectedTool.toolType == ToolType.Select)
             {
                 Rectangle biggerRectangle = new Rectangle(selectedRectangle.Location - new Point(15), selectedRectangle.Size + new Point(30));
@@ -234,10 +241,12 @@ public class Game1 : Game
                 }
             }
         }
+        // Konec drzeni mysi
         else if (Mouse.GetState().LeftButton == ButtonState.Released && isLeftButtonDown)
         {
             isLeftButtonDown = false;
 
+            // Konec kresleni tvaru
             if (isDrawing && !drawingPolygon && selectedTool.toolType != ToolType.Fill && selectedTool.toolType != ToolType.Select)
             {
                 previewCanvas.MergeInto(canvas);
@@ -245,11 +254,13 @@ public class Game1 : Game
                 previewCanvas.RemakeTexture();
             }
 
+            // Vyplneni oblasti
             if (isDrawing && selectedTool.toolType == ToolType.Fill)
             {
                 canvas.Fill(currentMousePosition, selectedTool.firstColor);
             }
 
+            // Konec vyberu oblasti
             if (isDrawing && selectedTool.toolType == ToolType.Select)
             {
                 if (selecting)
@@ -262,9 +273,7 @@ public class Game1 : Game
                         originalCanvas = selectedCanvas;
                     }
                     else
-                    {
                         ResetTool();
-                    }
                 }
                 else if (resizing)
                 {
@@ -272,13 +281,11 @@ public class Game1 : Game
                     originalSelectedRectangle = new Rectangle(-1, -1, -1, -1);
                 }
                 else if (moving)
-                {
                     moving = false;
-                }
             }
-
             isDrawing = false;
 
+            // Konec vykresleni polygonu
             if (drawingPolygon)
             {
                 if (polygonPoints.Count > 0)
@@ -311,13 +318,14 @@ public class Game1 : Game
             }
         }
 
-        //Calculating fps
+        //Vypocet FPS
         if (gameTime.ElapsedGameTime.TotalSeconds != 0)
         {
             fpsValues.Dequeue();
             fpsValues.Enqueue((int)(1 / gameTime.ElapsedGameTime.TotalSeconds));
         }
 
+        // Vykresleni tvaru podle pohybu mysi v aktualnim updatu
         if (isDrawing || drawingPolygon)
         {
             if (selectedTool.toolType != ToolType.Brush)
@@ -460,9 +468,10 @@ public class Game1 : Game
 
                     }
 
+                    // Vykresleni vybrane oblasti
                     if (selectedRectangle.Size.X > 0 || selectedRectangle.Size.Y > 0)
                         previewCanvas.rasterizer.Rasterize(new RectangleShape(selectedRectangle.Location - new Point(2),
-                            selectedRectangle.Location + selectedRectangle.Size + new Point(2), selectedTool.firstColor, 2,
+                            selectedRectangle.Location + selectedRectangle.Size + new Point(1), selectedTool.firstColor, 2,
                             LineType.Dashed, Color.Gray, false));
                     break;
             }
@@ -486,12 +495,16 @@ public class Game1 : Game
 
     protected override void Draw(GameTime gameTime)
     {
+        // Vycisteni obrazovky
         GraphicsDevice.Clear(Color.White);
 
         _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
+
+        // Vykresleni hlavniho a pomocneho platna
         _spriteBatch.Draw(canvas.texture, new Rectangle(CANVAS_OFFSET_X, CANVAS_OFFSET_Y, CANVAS_WIDTH, CANVAS_HEIGHT), Color.White);
         _spriteBatch.Draw(previewCanvas.texture, new Rectangle(CANVAS_OFFSET_X, CANVAS_OFFSET_Y, CANVAS_WIDTH, CANVAS_HEIGHT), Color.White);
 
+        // Vykresleni vybrane oblasti
         if (menuComponent.selectedTool.toolType == ToolType.Select)
         {
             if (selectedCanvas != null)
@@ -501,23 +514,28 @@ public class Game1 : Game
             }
         }
 
+        // Zobrazeni FPS
         _spriteBatch.DrawString(font, "FPS: " + (fpsValues.Sum() / fpsValues.Count).ToString(), new Vector2(10 + CANVAS_OFFSET_X, CANVAS_OFFSET_Y), Color.Black);
 
+        // Zobrazeni notifikace o ulozeni
         if (savedNotification > 0)
         {
             string text = "Saved";
             _spriteBatch.DrawString(font, text, new Vector2(WIDTH - font.MeasureString(text).X - 5, 0), Color.Green);
         }
+
         _spriteBatch.End();
 
         base.Draw(gameTime);
     }
 
+    // Pomocna metoda pro zjisteni stisknute klavesy
     public bool IsKeyPressed(Keys key)
     {
         return Keyboard.GetState().IsKeyDown(key) && !previousKeyboardState.IsKeyDown(key);
     }
 
+    // Vyresetovani promennych
     public void ResetTool()
     {
         isDrawing = false;
@@ -531,7 +549,14 @@ public class Game1 : Game
             selectedCanvas.MergeInto(canvas, selectedRectangle.Location);
             selectedCanvas = null;
         }
+
         selectedRectangle = new Rectangle(-1, -1, -1, -1);
+        originalSelectedRectangle = new Rectangle(-1, -1, -1, -1);
+        originalCanvas = null;
+        selecting = false;
+        moving = false;
+        resizing = false;
+        resizeDirection = ResizeDirection.None;
     }
 
     private ResizeDirection GetResizeDirection(Point mouse, Rectangle rect)

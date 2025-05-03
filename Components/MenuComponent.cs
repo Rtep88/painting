@@ -84,6 +84,7 @@ public class MenuComponent : DrawableGameComponent
 
         selectedTool.shiftPressed = Keyboard.GetState().IsKeyDown(Keys.LeftShift);
 
+        // Zjisteni zmacknute komponenty v menu
         if (game.mouseClicked)
         {
             if (Helper.CheckCollision(firstColorSelect, currentMousePosition))
@@ -114,6 +115,8 @@ public class MenuComponent : DrawableGameComponent
                 }
             }
         }
+
+        // Update zmacknutych komponent v menu
         if (Mouse.GetState().LeftButton == ButtonState.Pressed)
         {
             if (holdingColorSelect && Helper.CheckCollision(colorSelector, currentMousePosition))
@@ -162,6 +165,7 @@ public class MenuComponent : DrawableGameComponent
         base.Update(gameTime);
     }
 
+    // Vykresleni menu
     public override void Draw(GameTime gameTime)
     {
         spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.PointClamp, null, null);
@@ -206,6 +210,7 @@ public class MenuComponent : DrawableGameComponent
         base.Draw(gameTime);
     }
 
+    // Pomocna metoda pro kresleni obdelniku s oramovanim
     public void DrawWithBorder(Texture2D texture, Rectangle rect, Color color, Color borderColor)
     {
         spriteBatch.Draw(game.pixel, rect, borderColor);
@@ -215,6 +220,7 @@ public class MenuComponent : DrawableGameComponent
             rect.Width - BORDER_THICKNESS * 2, rect.Height - BORDER_THICKNESS * 2), color);
     }
 
+    // Pomocna metoda pro kresleni slidru
     public void DrawSlider(Rectangle rect, Color color, float value)
     {
         int xOffset = (int)(value * (rect.Width - 10));
