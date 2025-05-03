@@ -520,7 +520,7 @@ public class Game1 : Game
         // Zobrazeni notifikace o ulozeni
         if (savedNotification > 0)
         {
-            string text = "Saved";
+            string text = "Uloženo";
             _spriteBatch.DrawString(font, text, new Vector2(WIDTH - font.MeasureString(text).X - 5, 0), Color.Green);
         }
 

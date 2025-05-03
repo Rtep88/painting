@@ -53,7 +53,7 @@ with.
     <CharacterRegions>
       <CharacterRegion>
         <Start>&#32;</Start>
-        <End>&#381;</End>
+        <End>&#390;</End>
       </CharacterRegion>
     </CharacterRegions>
   </Asset>

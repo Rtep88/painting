@@ -91,3 +91,4 @@ Tento soubor obsahuje třídu `Helper`, která obsahuje pomocné metody pro hru.
 ## Klávesy
 * C - Smaže plátno
 * ESC - Ukočí kreslení čáry, obdélníku, kruhu, polygonu a ukončí také výběr
+* S - Uloží plátno do PNG souboru na plochu
