@@ -73,19 +73,21 @@ Tyto soubory obsahují třídy pro rasterizaci grafických objektů.
 Tento soubor obsahuje třídu `Helper`, která obsahuje pomocné metody pro hru.
 
 # Návod k použití
+## Ukázka
+![Ukázka](ReadmeAssets/Screenshot.png)
 * Na levo můžete najít menu, které obsahuje výběr barvy, výběr sytosti a průhlednosti barvy a výběr tloušťky štětce.
 * Dále tam můžete najít výběr nástroje
-### Nástroje
-1. Štětec - Kreslení myší barvou.
+## Nástroje
+1. Tužka - Kreslení myší barvou.
 2. Guma - Mazaní myší
-3. Čára - Kreslení rovné čáry. Při zmáčknutí shiftu se úhel čáry zarovnává na 45˚.
-4. Přerušovaná čára - Kreslení rovné přerušované čáry. Při zmáčknutí shiftu se úhel čáry zarovnává na 45˚.
-5. Tečkovaná čára - Kreslení rovné tečkované čáry. Při zmáčknutí shiftu se úhel čáry zarovnává na 45˚.
-6. Polygon - Kreslení rovných čar navazujících na sebe dokud se nevrátím do začátku. Při zmáčknutí shiftu se úhel čáry zarovnává na 45˚.
+3. Čára - Kreslení čáry. Při zmáčknutí shiftu se úhel čáry zarovnává na 45˚.
+4. Přerušovaná čára - Kreslení přerušované čáry. Při zmáčknutí shiftu se úhel čáry zarovnává na 45˚.
+5. Tečkovaná čára - Kreslení tečkované čáry. Při zmáčknutí shiftu se úhel čáry zarovnává na 45˚.
+6. Polygon - Kreslení čar navazujících na sebe dokud se nevrátím do začátku. Při zmáčknutí shiftu se úhel čáry zarovnává na 45˚.
 7. Obdélník - Kreslení obdelníku. Při zmáčknutí shiftu se zamkne poměr stran na 1:1
 8. Kruh - Kreslení kruhu. Při zmáčknutí shiftu se zamkne poměr stran na 1:1
-9. Výběr - Umožňuje vybrní části plátna a následné přesunutí a změnu velikosti. Při zmáčknutí delete se výběr smaže.
+9. Výběr - Umožňuje vybrání části plátna a následné přesunutí a změnu velikosti. Při zmáčknutí delete se výběr smaže.
 10. Kbelík - Vyplní část plátna se stejnou barvou, jinou barvou
-### Klávesy
+## Klávesy
 * C - Smaže plátno
 * ESC - Ukočí kreslení čáry, obdélníku, kruhu, polygonu a ukončí také výběr
