@@ -291,7 +291,7 @@ public class Game1 : Game
                 if (polygonPoints.Count > 0)
                 {
                     Point distance = polygonPoints[0] - currentMousePosition;
-                    if (Math.Sqrt(distance.X * distance.X + distance.Y * distance.Y) < 10)
+                    if (Math.Sqrt(distance.X * distance.X + distance.Y * distance.Y) < Math.Max(10, selectedTool.thickness / 2f))
                     {
                         drawingPolygon = false;
 

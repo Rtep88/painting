@@ -5,60 +5,73 @@ public static class LineRasterizer
 {
     public static void Rasterize(Line line, Rasterizer rasterizer)
     {
-        int radius = line.width / 2;
-        int dx = Math.Abs(line.end.X - line.start.X);
-        int sx = line.start.X < line.end.X ? 1 : -1;
-        int dy = -Math.Abs(line.end.Y - line.start.Y);
-        int sy = line.start.Y < line.end.Y ? 1 : -1;
-        int err = dx + dy, e2;
+        int lineRadius = line.width / 2;
 
-        int countOfYes = 1;
-        int countOfNo = -1;
+        if (line.end == line.start)
+        {
+            rasterizer.Rasterize(new Circle(line.start, lineRadius, line.color, line.color, 0, true, 1));
+            return;
+        }
 
+        Point start = line.start;
+        Point end = line.end;
+
+        int dashOnSegments = 1, dashOffSegments = -1;
         switch (line.lineType)
         {
-            case LineType.Dashed:
-                countOfYes = 3;
-                countOfNo = 2;
-                break;
-            case LineType.Dotted:
-                countOfYes = 1;
-                countOfNo = 1;
-                break;
+            case LineType.Dashed: dashOnSegments = 3; dashOffSegments = 2; break;
+            case LineType.Dotted: dashOnSegments = 1; dashOffSegments = 1; break;
         }
+        int segmentLength = lineRadius * 2 + 1;
+        int dashOnLength = (dashOnSegments - 1) * segmentLength;
+        int dashOffLength = (dashOffSegments + 1) * segmentLength;
+        int dashCycleLength = Math.Max(1, dashOnLength + dashOffLength);
 
-        int realCountOfYes = (countOfYes - 1) * (radius * 2 + 1);
-        int realCountOfNo = (countOfNo + 1) * (radius * 2 + 1);
-        int sum = Math.Max(1, realCountOfYes + realCountOfNo);
-        Point distance = new Point(0);
+        Point direction = new Point(Math.Abs(end.X - start.X), -Math.Abs(end.Y - start.Y));
+        Vector2 perpendicular = Vector2.Normalize(new Vector2(-(end.Y - start.Y), end.X - start.X));
+        Point sign = new Point(start.X < end.X ? 1 : -1, start.Y < end.Y ? 1 : -1);
+        int error = direction.X + direction.Y;
 
-        while (line.start.X != line.end.X || line.start.Y != line.end.Y)
+        bool lastDrawn = false;
+
+        Point current = start;
+        while (true)
         {
-            if ((int)Helper.Distance(distance) % sum <= realCountOfYes)
-                rasterizer.Rasterize(new Circle(line.start, radius, line.color, line.color, 0, true, 1));
+            if ((int)Helper.Distance(start - current) % dashCycleLength <= dashOnLength)
+            {
+                for (int i = -lineRadius; i <= lineRadius; i++)
+                {
+                    rasterizer.canvas.SetPixel(current + new Point((int)Math.Round(perpendicular.X * i), (int)Math.Round(perpendicular.Y * i)), 
+                        line.color);
+                }
 
-            e2 = 2 * err;
-            if (e2 >= dy && e2 <= dx)
-            {
-                err += dy;
-                line.start.X += sx;
-                distance.X += sx;
+                if (!lastDrawn)
+                {
+                    rasterizer.Rasterize(new Circle(current, lineRadius, line.color, line.color, 0, true, 1));
+                    lastDrawn = true;
+                }
             }
-            else if (e2 >= dy)
+            else if (lastDrawn)
             {
-                err += dy;
-                line.start.X += sx;
-                distance.X += sx;
+                rasterizer.Rasterize(new Circle(current, lineRadius, line.color, line.color, 0, true, 1));
+                lastDrawn = false;
             }
-            else if (e2 <= dx)
+
+            if (current == end) break;
+
+            if (2 * error >= direction.Y)
             {
-                err += dx;
-                line.start.Y += sy;
-                distance.Y += sy;
+                error += direction.Y;
+                current = new Point(current.X + sign.X, current.Y);
+            }
+            else if (2 * error <= direction.X)
+            {
+                error += direction.X;
+                current = new Point(current.X, current.Y + sign.Y);
             }
         }
 
-        if ((int)Helper.Distance(distance) % sum <= realCountOfYes)
-            rasterizer.Rasterize(new Circle(line.start, radius, line.color, line.color, 0, true, 1));
+        if ((int)Helper.Distance(start - current) % dashCycleLength <= dashOnLength)
+            rasterizer.Rasterize(new Circle(current, lineRadius, line.color, line.color, 0, true, 1));
     }
 }

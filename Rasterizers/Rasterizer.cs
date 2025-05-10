@@ -1,6 +1,6 @@
 public class Rasterizer
 {
-    Canvas canvas;
+    public Canvas canvas;
 
     public Rasterizer(Canvas canvas) => this.canvas = canvas;
 

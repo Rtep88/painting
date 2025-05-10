@@ -5,6 +5,8 @@ public static class Helper
 {
     public static float Distance(Point p1) => (float)Math.Sqrt(p1.X * p1.X + p1.Y * p1.Y);
 
+    public static float Distance(Vector2 p1) => (float)Math.Sqrt(p1.X * p1.X + p1.Y * p1.Y);
+
     public static Point SnapEndTo45Degrees(Point start, Point end)
     {
         Point size = end - start;

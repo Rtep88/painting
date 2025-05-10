@@ -75,7 +75,7 @@ Tento soubor obsahuje třídu `Helper`, která obsahuje pomocné metody pro hru.
 # Návod k použití
 ## Ukázka
 ![Ukázka](ReadmeAssets/Screenshot.png)
-* Na levo můžete najít menu, které obsahuje výběr barvy, výběr sytosti a průhlednosti barvy a výběr tloušťky štětce.
+* Na levo můžete najít menu, které obsahuje výběr barvy, sytosti a průhlednosti barvy a výběr tloušťky štětce.
 * Dále tam můžete najít výběr nástroje
 ## Nástroje
 1. Tužka - Kreslení myší barvou.
