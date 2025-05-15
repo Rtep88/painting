@@ -35,14 +35,22 @@ public static class LineRasterizer
         bool lastDrawn = false;
 
         Point current = start;
+
         while (true)
         {
             if ((int)Helper.Distance(start - current) % dashCycleLength <= dashOnLength)
             {
-                for (int i = -lineRadius; i <= lineRadius; i++)
+                if (lineRadius < 10)
+                    rasterizer.Rasterize(new Circle(current, lineRadius, line.color, line.color, 0, true, 1));
+                else
                 {
-                    rasterizer.canvas.SetPixel(current + new Point((int)Math.Round(perpendicular.X * i), (int)Math.Round(perpendicular.Y * i)), 
-                        line.color);
+                    bool isDiagonal = Math.Abs(perpendicular.X) < 0.86 && Math.Abs(perpendicular.X) > 0.5;
+                    bool shouldBeThinner = isDiagonal && lineRadius > 0;
+                    for (int i = -lineRadius; i <= lineRadius - (shouldBeThinner ? 1 : 0); i++)
+                    {
+                        rasterizer.canvas.SetPixel(current + new Point((int)Math.Round(perpendicular.X * i), (int)Math.Round(perpendicular.Y * i)),
+                            line.color);
+                    }
                 }
 
                 if (!lastDrawn)
